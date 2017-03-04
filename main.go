@@ -38,13 +38,13 @@ type Option struct {
 }
 
 var (
-	optSep        = ", "
-	lineSep       = "\n"
-	formatOutput  = "%s"
-	colorOutput   bool
-	tmuxOutput    bool
-	sparkLine     bool
-	opts          = map[string]*Option{
+	optSep       = ", "
+	lineSep      = "\n"
+	formatOutput = "%s"
+	colorOutput  bool
+	tmuxOutput   bool
+	sparkLine    bool
+	opts         = map[string]*Option{
 		"id":       {"BAT%d: ", false},
 		"state":    {"%s", false},
 		"percent":  {"%.2f%%", false},
@@ -179,7 +179,7 @@ func applyColors(str string, bat *battery.Battery) string {
 	case battery.Charging:
 		clr = getColor(states["charging"])
 	case battery.Discharging:
-		percent := bat.Current/bat.Full*100
+		percent := bat.Current / bat.Full * 100
 		switch {
 		case percent >= 75:
 			clr = getColor(states["high"])
