@@ -192,7 +192,6 @@ func applyColors(str string, bat *battery.Battery) string {
 	format := "%s%s%s"
 	if tmuxOutput {
 		format = "#[fg=%s]%s#[%s]"
-		// str = fmt.Sprintf("\e[%sm%s\e[%sm", clr, str, getColor("default"))
 	}
 	return fmt.Sprintf(format, clr, str, getColor("default"))
 }
@@ -217,7 +216,13 @@ func durationFormat(format string, bat *battery.Battery) string {
 		return "fully charged"
 	}
 	duration, _ := time.ParseDuration(fmt.Sprintf("%fh", timeNum))
-	return fmt.Sprintf(format, duration, str)
+	durationStr := duration.String()
+	// fmt.Printf("timeNum: %v\n duration: %d\n format:%s\n", timeNum, duration, format)
+	i := strings.Index(durationStr, "m")
+	if i > 0 {
+		durationStr = durationStr[:i+1]
+	}
+	return fmt.Sprintf(format, durationStr, str)
 }
 
 func exit(code int, msg string) {
