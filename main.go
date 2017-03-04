@@ -240,7 +240,7 @@ func extractTime(duration time.Duration, unit string, after string) (int, error)
 	}
 	to = strings.Index(duration.String(), unit)
 	if from > 0 && to > 0 {
-			str = duration.String()[from+1:to]
+		str = duration.String()[from+1 : to]
 	} else if to > 0 {
 		str = duration.String()[:to]
 	}
