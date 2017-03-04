@@ -24,6 +24,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -48,7 +49,7 @@ var (
 		"id":       {"BAT%d: ", false},
 		"state":    {"%s", false},
 		"percent":  {"%.2f%%", false},
-		"duration": {"%s %s", false},
+		"duration": {"%dh%dm %s", false},
 	}
 	colors = map[string]string{
 		"green":   "0;32",
@@ -183,7 +184,7 @@ func applyColors(str string, bat *battery.Battery) string {
 		switch {
 		case percent >= 75:
 			clr = getColor(states["high"])
-		case percent >= 25 && percent < 75:
+		case percent >= 25: // && percent < 75:
 			clr = getColor(states["medium"])
 		case percent < 25:
 			clr = getColor(states["low"])
@@ -215,17 +216,39 @@ func durationFormat(format string, bat *battery.Battery) string {
 	default: // Full charge
 		return "fully charged"
 	}
-	duration, _ := time.ParseDuration(fmt.Sprintf("%fh", timeNum))
-	durationStr := duration.String()
-	// fmt.Printf("timeNum: %v\n duration: %d\n format:%s\n", timeNum, duration, format)
-	i := strings.Index(durationStr, "m")
-	if i > 0 {
-		durationStr = durationStr[:i+1]
+	duration, err := time.ParseDuration(fmt.Sprintf("%fh", timeNum))
+	if err != nil {
+		exit(1, err)
 	}
-	return fmt.Sprintf(format, durationStr, str)
+	hours, err := extractTime(duration, "h", "")
+	if err != nil {
+		exit(1, err)
+	}
+	minutes, err := extractTime(duration, "m", "h")
+	if err != nil {
+		exit(1, err)
+	}
+	// fmt.Printf("> timeNum: %f\n> duration: %s\n> format:%s\n", timeNum, duration, format)
+	return fmt.Sprintf(format, hours, minutes, str)
 }
 
-func exit(code int, msg string) {
+func extractTime(duration time.Duration, unit string, after string) (int, error) {
+	var str = "0"
+	var from, to int
+	if after != "" {
+		from = strings.Index(duration.String(), after)
+	}
+	to = strings.Index(duration.String(), unit)
+	if from > 0 && to > 0 {
+			str = duration.String()[from+1:to]
+	} else if to > 0 {
+		str = duration.String()[:to]
+	}
+	integer, err := strconv.Atoi(str)
+	return integer, err
+}
+
+func exit(code int, msg interface{}) {
 	fmt.Fprintln(os.Stderr, msg)
 	os.Exit(code)
 }
