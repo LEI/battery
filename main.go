@@ -89,7 +89,8 @@ func getBatteryString(idx int, bat *battery.Battery) string {
 			}
 		case "duration":
 			batteryDuration := durationFormat(val.format, bat)
-			if batteryDuration == "fully charged" {
+			if opts["state"].flag && batteryDuration == "fully charged" {
+				// Hide duration, battery state is already 'Full'
 				continue
 			}
 			opt = batteryDuration
@@ -173,16 +174,17 @@ func init() {
 	pflag.BoolVarP(&tmuxOutput, "tmux", "t", tmuxOutput, "Enable tmux status bar colors")
 	pflag.BoolVarP(&sparkLine, "spark", "", sparkLine, "Enable sparkline left to percentage")
 	// pflag.BoolVarP(&asciiBar, "ascii", "a", asciiBar, "Enable ascii bar left to percentage")
+	// pflag.IntVarP(&limit, "limit", "l", limit, "Limit lines")
 
 	pflag.BoolVarP(&opts["duration"].flag, "duration", "d", opts["duration"].flag, "Print time until (dis)charged or charge rate status")
 	pflag.BoolVarP(&opts["id"].flag, "id", "i", opts["id"].flag, "Battery identifier")
 	pflag.BoolVarP(&opts["percent"].flag, "percent", "p", opts["percent"].flag, "Print remaingin charge as a percentage")
 	pflag.BoolVarP(&opts["state"].flag, "state", "s", opts["state"].flag, "Print state (Charging, Discharging)")
 
-	pflag.StringVarP(&opts["duration"].format, "duration-fmt", "", opts["duration"].format, "Format")
-	pflag.StringVarP(&opts["id"].format, "id-fmt", "", opts["id"].format, "Format")
-	pflag.StringVarP(&opts["percent"].format, "percent-fmt", "", opts["percent"].format, "Format")
-	pflag.StringVarP(&opts["state"].format, "state-fmt", "", opts["state"].format, "Format")
+	pflag.StringVarP(&opts["duration"].format, "dfmt", "", opts["duration"].format, "Format duration")
+	pflag.StringVarP(&opts["id"].format, "ifmt", "", opts["id"].format, "Format battery number")
+	pflag.StringVarP(&opts["percent"].format, "pfmt", "", opts["percent"].format, "Format percentage")
+	pflag.StringVarP(&opts["state"].format, "sfmt", "", opts["state"].format, "Format state")
 }
 
 func main() {
