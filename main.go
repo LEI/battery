@@ -189,13 +189,12 @@ func applyColors(str string, bat *battery.Battery) string {
 			clr = getColor(states["low"])
 		}
 	}
+	format := "%s%s%s"
 	if tmuxOutput {
-		str = fmt.Sprintf("#[fg=%s]%s#[%s]", clr, str, getColor("default"))
-	} else {
-		str = fmt.Sprintf("%s%s%s", clr, str, getColor("default"))
+		format = "#[fg=%s]%s#[%s]"
 		// str = fmt.Sprintf("\e[%sm%s\e[%sm", clr, str, getColor("default"))
 	}
-	return str
+	return fmt.Sprintf(format, clr, str, getColor("default"))
 }
 
 func durationFormat(format string, bat *battery.Battery) string {
