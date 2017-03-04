@@ -66,6 +66,58 @@ var (
 	}
 )
 
+func init() {
+	pflag.BoolVarP(&colorOutput, "color", "c", colorOutput, "Enable color output")
+	pflag.BoolVarP(&tmuxOutput, "tmux", "t", tmuxOutput, "Enable tmux status bar colors")
+	pflag.BoolVarP(&sparkLine, "spark", "", sparkLine, "Enable sparkline left to percentage")
+	// pflag.BoolVarP(&asciiBar, "ascii", "a", asciiBar, "Enable ascii bar left to percentage")
+	// pflag.IntVarP(&limit, "limit", "l", limit, "Limit lines")
+
+	pflag.BoolVarP(&opts["duration"].flag, "duration", "d", opts["duration"].flag, "Print time until (dis)charged or charge rate status")
+	pflag.BoolVarP(&opts["id"].flag, "id", "i", opts["id"].flag, "Battery identifier")
+	pflag.BoolVarP(&opts["percent"].flag, "percent", "p", opts["percent"].flag, "Print remaingin charge as a percentage")
+	pflag.BoolVarP(&opts["state"].flag, "state", "s", opts["state"].flag, "Print state (Charging, Discharging)")
+
+	pflag.StringVarP(&opts["duration"].format, "dfmt", "", opts["duration"].format, "Format duration")
+	pflag.StringVarP(&opts["id"].format, "ifmt", "", opts["id"].format, "Format battery number")
+	pflag.StringVarP(&opts["percent"].format, "pfmt", "", opts["percent"].format, "Format percentage")
+	pflag.StringVarP(&opts["state"].format, "sfmt", "", opts["state"].format, "Format state")
+}
+
+func main() {
+	pflag.Parse()
+	nbArg := pflag.NArg()
+	if nbArg > 1 {
+		exit(1, fmt.Sprintf("invalid number of args: %d", nbArg))
+	} else if nbArg == 1 && pflag.Arg(0) != "" {
+		formatOutput = pflag.Arg(0)
+	}
+	nbFlag := pflag.NFlag()
+
+	if nbFlag == 0 || (opts["id"].flag && !opts["state"].flag && !opts["percent"].flag && !opts["duration"].flag) {
+		// Print full battery info
+		opts["id"].flag = true
+		opts["state"].flag = true
+		opts["percent"].flag = true
+		opts["duration"].flag = true
+	}
+	batteries, err := battery.GetAll()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	if len(batteries) == 0 {
+		fmt.Fprintln(os.Stderr, "No batteries")
+		os.Exit(1)
+	}
+	var lines []string
+	for i, bat := range batteries {
+		str := getBatteryString(i, bat)
+		lines = append(lines, str)
+	}
+	fmt.Printf(formatOutput+"\n", strings.Join(lines, lineSep))
+}
+
 func getBatteryString(idx int, bat *battery.Battery) string {
 	var out []string
 	for _, key := range []string{"state", "percent", "duration"} {
@@ -167,58 +219,6 @@ func durationFormat(format string, bat *battery.Battery) string {
 	}
 	duration, _ := time.ParseDuration(fmt.Sprintf("%fh", timeNum))
 	return fmt.Sprintf(format, duration, str)
-}
-
-func init() {
-	pflag.BoolVarP(&colorOutput, "color", "c", colorOutput, "Enable color output")
-	pflag.BoolVarP(&tmuxOutput, "tmux", "t", tmuxOutput, "Enable tmux status bar colors")
-	pflag.BoolVarP(&sparkLine, "spark", "", sparkLine, "Enable sparkline left to percentage")
-	// pflag.BoolVarP(&asciiBar, "ascii", "a", asciiBar, "Enable ascii bar left to percentage")
-	// pflag.IntVarP(&limit, "limit", "l", limit, "Limit lines")
-
-	pflag.BoolVarP(&opts["duration"].flag, "duration", "d", opts["duration"].flag, "Print time until (dis)charged or charge rate status")
-	pflag.BoolVarP(&opts["id"].flag, "id", "i", opts["id"].flag, "Battery identifier")
-	pflag.BoolVarP(&opts["percent"].flag, "percent", "p", opts["percent"].flag, "Print remaingin charge as a percentage")
-	pflag.BoolVarP(&opts["state"].flag, "state", "s", opts["state"].flag, "Print state (Charging, Discharging)")
-
-	pflag.StringVarP(&opts["duration"].format, "dfmt", "", opts["duration"].format, "Format duration")
-	pflag.StringVarP(&opts["id"].format, "ifmt", "", opts["id"].format, "Format battery number")
-	pflag.StringVarP(&opts["percent"].format, "pfmt", "", opts["percent"].format, "Format percentage")
-	pflag.StringVarP(&opts["state"].format, "sfmt", "", opts["state"].format, "Format state")
-}
-
-func main() {
-	pflag.Parse()
-	nbArg := pflag.NArg()
-	if nbArg > 1 {
-		exit(1, fmt.Sprintf("invalid number of args: %d", nbArg))
-	} else if nbArg == 1 && pflag.Arg(0) != "" {
-		formatOutput = pflag.Arg(0)
-	}
-	nbFlag := pflag.NFlag()
-
-	if nbFlag == 0 || (opts["id"].flag && !opts["state"].flag && !opts["percent"].flag && !opts["duration"].flag) {
-		// Print full battery info
-		opts["id"].flag = true
-		opts["state"].flag = true
-		opts["percent"].flag = true
-		opts["duration"].flag = true
-	}
-	batteries, err := battery.GetAll()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-	if len(batteries) == 0 {
-		fmt.Fprintln(os.Stderr, "No batteries")
-		os.Exit(1)
-	}
-	var lines []string
-	for i, bat := range batteries {
-		str := getBatteryString(i, bat)
-		lines = append(lines, str)
-	}
-	fmt.Printf(formatOutput+"\n", strings.Join(lines, lineSep))
 }
 
 func exit(code int, msg string) {
