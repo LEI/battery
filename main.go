@@ -33,24 +33,15 @@ import (
 	"github.com/spf13/pflag"
 )
 
-type Option struct {
-	format string
-	flag   bool
-}
-
 var (
+	Out          = &Output{}
 	optSep       = ", "
-	lineSep      = "\n"
+	outSep       = "\n"
 	formatOutput = "%s"
 	colorOutput  bool
 	tmuxOutput   bool
 	sparkLine    bool
-	opts         = map[string]*Option{
-		"id":       {"BAT%d: ", false},
-		"state":    {"%s", false},
-		"percent":  {"%.2f%%", false},
-		"duration": {"%dh%dm %s", false},
-	}
+	order     = []string{"state", "percent", "duration"}
 	colors = map[string]string{
 		"green":   "0;32",
 		"yellow":  "0;33",
@@ -67,7 +58,50 @@ var (
 	}
 )
 
+// type Color struct {
+// 	name string
+// 	ascii string
+// }
+// func (c *Color) Wrap(str string) string {
+// }
+
+type Output struct {
+	opts map[string]*Option
+}
+
+func (o *Output) Add(key string, val *Option) {
+	 *o.opts[key] = *val
+}
+
+func (o *Output) Get(key string) Option {
+	return *o.opts[key]
+}
+
+func (o *Output) Flag(key string) bool {
+	return (*o.opts[key]).flag
+}
+
+func (o *Output) SetFlag(key string, val bool) {
+	(*o.opts[key]).flag = val
+}
+
+func (o *Output) Format(key string) string {
+	return (*o.opts[key]).format
+}
+
+type Option struct {
+	format string
+	flag   bool
+}
+
 func init() {
+	var opts = map[string]*Option{
+		"id":       {"BAT%d: ", false},
+		"state":    {"%s", false},
+		"percent":  {"%.2f%%", false},
+		"duration": {"%dh%dm %s", false},
+	}
+
 	pflag.BoolVarP(&colorOutput, "color", "c", colorOutput, "Enable color output")
 	pflag.BoolVarP(&tmuxOutput, "tmux", "t", tmuxOutput, "Enable tmux status bar colors")
 	pflag.BoolVarP(&sparkLine, "spark", "", sparkLine, "Enable sparkline left to percentage")
@@ -83,24 +117,22 @@ func init() {
 	pflag.StringVarP(&opts["id"].format, "ifmt", "", opts["id"].format, "Format battery number")
 	pflag.StringVarP(&opts["percent"].format, "pfmt", "", opts["percent"].format, "Format percentage")
 	pflag.StringVarP(&opts["state"].format, "sfmt", "", opts["state"].format, "Format state")
+
+	Out.opts = opts
 }
 
 func main() {
 	pflag.Parse()
-	nbArg := pflag.NArg()
-	if nbArg > 1 {
-		exit(1, fmt.Sprintf("invalid number of args: %d", nbArg))
-	} else if nbArg == 1 && pflag.Arg(0) != "" {
+	if pflag.NArg() > 1 {
+		exit(1, fmt.Sprintf("invalid number of args: %d", pflag.NArg()))
+	} else if pflag.NArg() == 1 && pflag.Arg(0) != "" {
 		formatOutput = pflag.Arg(0)
 	}
-	nbFlag := pflag.NFlag()
-
-	if nbFlag == 0 || (opts["id"].flag && !opts["state"].flag && !opts["percent"].flag && !opts["duration"].flag) {
+	if pflag.NFlag() == 0 || (!Out.opts["state"].flag && !Out.opts["percent"].flag && !Out.opts["duration"].flag) {
 		// Print full battery info
-		opts["id"].flag = true
-		opts["state"].flag = true
-		opts["percent"].flag = true
-		opts["duration"].flag = true
+		Out.opts["state"].flag = true
+		Out.opts["percent"].flag = true
+		Out.opts["duration"].flag = true
 	}
 	batteries, err := battery.GetAll()
 	if err != nil {
@@ -111,18 +143,19 @@ func main() {
 		fmt.Fprintln(os.Stderr, "No batteries")
 		os.Exit(1)
 	}
-	var lines []string
+	var out []string
 	for i, bat := range batteries {
 		str := getBatteryString(i, bat)
-		lines = append(lines, str)
+		out = append(out, str)
 	}
-	fmt.Printf(formatOutput+"\n", strings.Join(lines, lineSep))
+	fmt.Printf(formatOutput+"\n", strings.Join(out, outSep))
 }
 
 func getBatteryString(idx int, bat *battery.Battery) string {
 	var out []string
-	for _, key := range []string{"state", "percent", "duration"} {
-		val := opts[key]
+	for _, key := range order {
+		val := Out.opts[key]
+		// fmt.Println("KEY:", key, val)
 		if !val.flag {
 			continue
 		}
@@ -142,7 +175,7 @@ func getBatteryString(idx int, bat *battery.Battery) string {
 			}
 		case "duration":
 			batteryDuration := durationFormat(val.format, bat)
-			if opts["state"].flag && batteryDuration == "fully charged" {
+			if Out.opts["state"].flag && batteryDuration == "fully charged" {
 				// Hide duration, battery state is already 'Full'
 				continue
 			}
@@ -152,11 +185,13 @@ func getBatteryString(idx int, bat *battery.Battery) string {
 		}
 		if opt != "" {
 			out = append(out, opt)
+		// } else {
+		// 	fmt.Fprintf(os.Stderr, "Warning: empty %s", key)
 		}
 	}
 	str := strings.Join(out, optSep)
-	if opts["id"].flag {
-		str = fmt.Sprintf(opts["id"].format+"%s", idx, str)
+	if Out.opts["id"].flag {
+		str = fmt.Sprintf(Out.opts["id"].format+"%s", idx, str)
 	}
 	if colorOutput {
 		str = applyColors(str, bat)
