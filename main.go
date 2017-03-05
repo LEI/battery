@@ -41,8 +41,8 @@ var (
 	colorOutput  bool
 	tmuxOutput   bool
 	sparkLine    bool
-	order     = []string{"state", "percent", "duration"}
-	colors = map[string]string{
+	order        = []string{"state", "percent", "duration"}
+	colors       = map[string]string{
 		"green":   "0;32",
 		"yellow":  "0;33",
 		"red":     "0;31",
@@ -70,7 +70,7 @@ type Output struct {
 }
 
 func (o *Output) Add(key string, val *Option) {
-	 *o.opts[key] = *val
+	*o.opts[key] = *val
 }
 
 func (o *Output) Get(key string) Option {
@@ -183,10 +183,9 @@ func getBatteryString(idx int, bat *battery.Battery) string {
 			// default:
 			// 	opt += fmt.Sprint(val.format)
 		}
+		// fmt.Fprintf(os.Stderr, "Warning: empty %s", key)
 		if opt != "" {
 			out = append(out, opt)
-		// } else {
-		// 	fmt.Fprintf(os.Stderr, "Warning: empty %s", key)
 		}
 	}
 	str := strings.Join(out, optSep)
