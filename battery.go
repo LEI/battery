@@ -108,13 +108,15 @@ func (bat *Battery) Duration() string {
 			return "discharging at zero rate - will never fully discharge"
 		}
 		str = "remaining"
-	default: // Full charge
-		return ""
+	default:
+		return "not charging, not discharging"
 	}
-	hours, minutes := bat.Hours(), bat.Minutes()
+	hours, minutes, seconds := bat.Hours(), bat.Minutes(), bat.Seconds()
 	switch 0 { // %02d
-	// case hours + minutes:
-	// 	str = fmt.Sprintf("%s", str)
+	case hours + minutes + seconds:
+		return "" // fully charged
+	case hours + minutes:
+		str = fmt.Sprintf("%ds %s", seconds, str)
 	case hours:
 		str = fmt.Sprintf("%dm %s", minutes, str)
 	default:

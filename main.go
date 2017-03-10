@@ -35,45 +35,8 @@ var (
 	outputFormat = "%s\n"
 	tmuxOutput   bool
 	colorOutput  bool
+	colors       Colors
 )
-
-var colors = map[string]string{
-	"green":   "0;32",
-	"yellow":  "0;33",
-	"red":     "0;31",
-	"white":   "0;37",
-	"default": "0",
-	"none":    "0",
-}
-
-var (
-	FullColor = "green"
-	ChargingColor = "green"
-	// Discharging
-	HighColor = "none"
-	MediumColor = "yellow"
-	LowColor = "red"
-)
-
-type Adapter interface {
-	// GetAll() ([]*battery.Battery, error)
-	// GetPrimary() *battery.Battery
-	GetHealth() string
-	GetPercent() float64
-	GetStatus() string // (dis)charging
-	GetState() string  // (un)plugged
-	// duration
-	// temperature
-}
-
-// type Battery struct {}
-
-// type Color struct {
-// 	name string
-// 	ascii string
-// }
-// func (c *Color) Wrap(str string) string {
-// }
 
 func init() {
 	pflag.BoolVarP(&colorOutput, "color", "c", colorOutput, "Enable color output")
@@ -92,15 +55,18 @@ func main() {
 	default:
 		exit(1, fmt.Sprintf("Invalid number of args: %d", pflag.NArg()))
 	}
-	if tmuxOutput && !colorOutput {
-		colorOutput = true
-	}
 	batteries, err := GetAll()
 	if err != nil {
 		exit(1, err)
 	}
 	if len(batteries) == 0 {
 		exit(1, fmt.Errorf("No batteries"))
+	}
+	switch {
+	case colorOutput:
+		colors = &asciiColors{}
+	case tmuxOutput:
+		colors = &tmuxColors{}
 	}
 	var out []string
 	for i, bat := range batteries {
@@ -110,51 +76,33 @@ func main() {
 		if err != nil {
 			exit(1, err)
 		}
-		if colorOutput {
-			str = colorString(str, b)
+		if colorOutput || tmuxOutput {
+			str = colorString(str, getStateColor(b))
 		}
 		out = append(out, str)
 	}
 	fmt.Printf(outputFormat, strings.Join(out, outputSep))
 }
 
-func colorString(str string, bat *Battery) string {
-	var format = "%s%s%s"
-	if tmuxOutput {
-		format = "#[fg=%s]%s#[%s]"
-	}
-	return fmt.Sprintf(format, getStateColor(bat), str, getColor("default"))
-}
-
 func getStateColor(bat *Battery) string {
 	var clr string
 	switch {
 	case bat.IsCharging():
-		clr = getColor(ChargingColor)
+		clr = colors.Get(ChargingColor)
 	case bat.IsDischarging():
 		percent := bat.PercentFloat()
 		switch {
 		case percent >= 75:
-			clr = getColor(HighColor)
+			clr = colors.Get(HighColor)
 		case percent >= 25: // && percent < 75:
-			clr = getColor(MediumColor)
+			clr = colors.Get(MediumColor)
 		case percent < 25:
-			clr = getColor(LowColor)
+			clr = colors.Get(LowColor)
 		}
 	default:
-		clr = getColor(FullColor)
+		clr = colors.Get(FullColor)
 	}
 	return clr
-}
-
-func getColor(key string) string {
-	switch key {
-	default:
-		if !tmuxOutput {
-			key = fmt.Sprintf("\033[%sm", colors[key])
-		}
-	}
-	return key
 }
 
 func exit(code int, msg interface{}) {
