@@ -112,7 +112,7 @@ func (bat *Battery) Duration() string {
 		return ""
 	}
 	hours, minutes := bat.Hours(), bat.Minutes()
-	switch 0 {
+	switch 0 { // %02d
 	// case hours + minutes:
 	// 	str = fmt.Sprintf("%s", str)
 	case hours:
@@ -121,24 +121,6 @@ func (bat *Battery) Duration() string {
 		str = fmt.Sprintf("%dh%dm %s", hours, minutes, str)
 	}
 	return fmt.Sprintf("%s", str)
-}
-
-func (bat *Battery) Hours() int {
-	duration := bat.ParseDuration()
-	h := duration.Hours()
-	return int(h) % int(time.Hour)
-}
-
-func (bat *Battery) Minutes() int {
-	duration := bat.ParseDuration()
-	m := duration.Minutes()
-	return int(m) % int(time.Minute)
-}
-
-func (bat *Battery) Seconds() int {
-	duration := bat.ParseDuration()
-	s := duration.Seconds()
-	return int(s) % int(time.Second)
 }
 
 func (bat *Battery) ParseDuration() time.Duration {
@@ -166,4 +148,34 @@ func (bat *Battery) ParseDuration() time.Duration {
 	}
 	bat.dur = duration
 	return duration
+}
+
+func (bat *Battery) Hours() int {
+	duration := bat.ParseDuration()
+	h := duration.Hours()
+	return int(h) % int(time.Hour)
+}
+
+func (bat *Battery) Fhours(format string) string {
+	return fmt.Sprintf(format, bat.Hours())
+}
+
+func (bat *Battery) Minutes() int {
+	duration := bat.ParseDuration()
+	m := duration.Minutes()
+	return int(m) % int(time.Minute)
+}
+
+func (bat *Battery) Fminutes(format string) string {
+	return fmt.Sprintf(format, bat.Minutes())
+}
+
+func (bat *Battery) Seconds() int {
+	duration := bat.ParseDuration()
+	s := duration.Seconds()
+	return int(s) % int(time.Second)
+}
+
+func (bat *Battery) Fseconds(format string) string {
+	return fmt.Sprintf(format, bat.Seconds())
 }

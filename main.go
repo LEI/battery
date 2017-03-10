@@ -47,7 +47,7 @@ var colors = map[string]string{
 }
 
 var (
-	FullColor = "red"
+	FullColor = "green"
 	ChargingColor = "green"
 	// Discharging
 	HighColor = "none"
@@ -142,7 +142,7 @@ func getStateColor(bat *Battery) string {
 			clr = getColor(LowColor)
 		}
 	default:
-		clr = getColor("full")
+		clr = getColor(FullColor)
 	}
 	return clr
 }
