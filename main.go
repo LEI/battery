@@ -22,10 +22,12 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/distatus/battery"
@@ -37,10 +39,12 @@ var (
 	Out          = &Output{}
 	optSep       = ", "
 	outSep       = "\n"
-	formatOutput = "%s"
 	colorOutput  bool
 	tmuxOutput   bool
 	sparkLine    bool
+	formatSpark  = "%s "
+	formatOutput = "%s"
+	formatTpl    = "BAT{{.Id}}: {{.State}}, {{printf \"%.0f\" .Percent}}%{{if ne .Duration.String \"\"}}, {{end}}{{.Duration}}"
 	order        = []string{"state", "percent", "duration"}
 	colors       = map[string]string{
 		"green":   "0;32",
@@ -51,8 +55,8 @@ var (
 		"none":    "0",
 	}
 	states = map[string]string{
-		"charging": "none",
-		"high":     "green",
+		"charging": "green",
+		"high":     "none",
 		"medium":   "yellow",
 		"low":      "red",
 	}
@@ -77,6 +81,33 @@ type Adapter interface {
 // }
 // func (c *Color) Wrap(str string) string {
 // }
+
+type Battery struct {
+	Id int
+	State string
+	Percent float64
+	Duration *Duration
+}
+
+type Duration struct {
+	Time time.Duration
+	Until string
+}
+
+func (d *Duration) String() string {
+	if d.Time.Seconds() == 0 {
+		return fmt.Sprintf("%s", d.Until)
+	}
+	hours, err := extractTime(d.Time, "h", "")
+	if err != nil {
+		exit(1, err)
+	}
+	minutes, err := extractTime(d.Time, "m", "h")
+	if err != nil {
+		exit(1, err)
+	}
+	return fmt.Sprintf("%dh%dm %s", hours, minutes, d.Until)
+}
 
 type Output struct {
 	opts map[string]*Option
@@ -130,6 +161,7 @@ func init() {
 	pflag.StringVarP(&opts["id"].format, "ifmt", "", opts["id"].format, "Format battery number")
 	pflag.StringVarP(&opts["percent"].format, "pfmt", "", opts["percent"].format, "Format percentage")
 	pflag.StringVarP(&opts["state"].format, "sfmt", "", opts["state"].format, "Format state")
+	pflag.StringVarP(&formatSpark, "spark-format", "", formatSpark, "Format spark")
 
 	Out.opts = opts
 }
@@ -141,6 +173,17 @@ func main() {
 	} else if pflag.NArg() == 1 && pflag.Arg(0) != "" {
 		formatOutput = pflag.Arg(0)
 	}
+
+	// var outOrder []string
+	// pflag.Visit(func(f *pflag.Flag) {
+	// 	switch f.Name {
+	// 	case "state", "percent", "duration":
+	// 		outOrder = append(outOrder, f.Name)
+	// 	}
+	// 	// fmt.Fprintf(os.Stderr, "%+v\n", f)
+	// })
+	// fmt.Fprintf(os.Stderr, "%+v\n", outOrder)
+
 	if pflag.NFlag() == 0 || (!Out.opts["state"].flag && !Out.opts["percent"].flag && !Out.opts["duration"].flag) {
 		// Print full battery info
 		Out.opts["state"].flag = true
@@ -158,10 +201,34 @@ func main() {
 	}
 	var out []string
 	for i, bat := range batteries {
-		str := getBatteryString(i, bat)
+		str, err := getBattery(i, bat)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		// str := getBatteryString(i, bat)
 		out = append(out, str)
 	}
 	fmt.Printf(formatOutput+"\n", strings.Join(out, outSep))
+}
+
+func getBattery(idx int, bat *battery.Battery) (string, error) {
+	b := &Battery{
+		State: bat.State.String(),
+		Percent: bat.Current/bat.Full*100,
+		Duration: getDuration(bat),
+	}
+	tmpl, err := template.New("bat").Parse(formatTpl)
+	// tmpl = tmpl.Option("missingkey=zero")
+	if err != nil {
+		return "", err
+	}
+	buf := &bytes.Buffer{}
+	err = tmpl.Execute(buf, b)
+	if err != nil {
+		return buf.String(), err
+	}
+	return buf.String(), nil
 }
 
 func getBatteryString(idx int, bat *battery.Battery) string {
@@ -184,7 +251,8 @@ func getBatteryString(idx int, bat *battery.Battery) string {
 				if len(runes) != 3 {
 					panic(fmt.Errorf("invalid sparkline lendth (%d != 3): %s", len(runes), string(runes)))
 				}
-				opt = fmt.Sprintf("%s %s", string(runes[1]), opt)
+				// opt = fmt.Sprintf("%s %s", string(runes[1]), opt)
+				opt = fmt.Sprintf(formatSpark + "%s", string(runes[1]), opt)
 			}
 		case "duration":
 			batteryDuration := durationFormat(val.format, bat)
@@ -242,6 +310,38 @@ func applyColors(str string, bat *battery.Battery) string {
 		format = "#[fg=%s]%s#[%s]"
 	}
 	return fmt.Sprintf(format, clr, str, getColor("default"))
+}
+
+func getDuration(bat *battery.Battery) *Duration {
+	var str string
+	var timeNum float64
+	switch bat.State {
+	case battery.Charging:
+		if bat.ChargeRate == 0 {
+			str = "charging at zero rate - will never fully charge"
+			break
+		}
+		str = "until charged"
+		timeNum = (bat.Full - bat.Current) / bat.ChargeRate
+	case battery.Discharging:
+		if bat.ChargeRate == 0 {
+			str = "discharging at zero rate - will never fully discharge"
+			break
+		}
+		str = "remaining"
+		timeNum = bat.Current / bat.ChargeRate
+	default: // Full charge
+		// str = "fully charged"
+	}
+	d := &Duration{Until: str}
+	if timeNum > 0 {
+		duration, err := time.ParseDuration(fmt.Sprintf("%fh", timeNum))
+		if err != nil {
+			exit(1, err)
+		}
+		d.Time = duration
+	}
+	return d
 }
 
 func durationFormat(format string, bat *battery.Battery) string {
