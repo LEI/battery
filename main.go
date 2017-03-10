@@ -58,6 +58,19 @@ var (
 	}
 )
 
+type Adapter interface {
+	// GetAll() ([]*battery.Battery, error)
+	// GetPrimary() *battery.Battery
+	GetHealth() string
+	GetPercent() float64
+	GetStatus() string // (dis)charging
+	GetState() string // (un)plugged
+	// duration
+	// temperature
+}
+
+// type Battery struct {}
+
 // type Color struct {
 // 	name string
 // 	ascii string
