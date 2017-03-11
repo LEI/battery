@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/distatus/battery"
-	"github.com/joliv/spark"
 )
 
 func GetAll() ([]*battery.Battery, error) {
@@ -82,12 +81,7 @@ func (bat *Battery) Fpercent(format string) string {
 }
 
 func (bat *Battery) Spark() string {
-	sparkLine := spark.Line([]float64{0, bat.Current, bat.Full})
-	runes := []rune(sparkLine)
-	if len(runes) != 3 {
-		panic(fmt.Errorf("invalid sparkline length (%d != 3): %s", len(runes), string(runes)))
-	}
-	return fmt.Sprintf("%s", string(runes[1]))
+	return sparkBar(bat.Current, bat.Full)
 }
 
 func (bat *Battery) Duration() string {

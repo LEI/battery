@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
+	"github.com/joliv/spark"
 )
 
 var (
@@ -119,6 +120,15 @@ func formatDuration(bat *Battery) string {
 		str = fmt.Sprintf("%dh%dm", hours, minutes)
 	}
 	return str
+}
+
+func sparkBar(val float64, max float64) string {
+	sparkLine := spark.Line([]float64{0, val, max})
+	runes := []rune(sparkLine)
+	if len(runes) != 3 {
+		panic(fmt.Errorf("invalid sparkline length (%d != 3): %s", len(runes), string(runes)))
+	}
+	return fmt.Sprintf("%s", string(runes[1]))
 }
 
 func exit(code int, msg interface{}) {
