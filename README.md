@@ -9,6 +9,9 @@ Based on [distatus/battery](https://github.com/distatus/battery)
 
 ## Usage
 
-    $ battery -h
+Default format: `{{.Id}}: {{.State}}, {{.Percent}}%{{if ne .Duration ""}}, {{end}}{{.Duration}}`
+
+    $ battery [flags] [format]
     # -c, --color
     # -t, --tmux
+
