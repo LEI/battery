@@ -26,6 +26,10 @@ func TestGetAll(t *testing.T) {
 func TestParse(t *testing.T) {
 
 	sparkFlag = true
+	// tmuxFlag = true
+	if colors == nil {
+		colors = &tmuxColors{}
+	}
 
 	cases := []struct {
 		battery *Battery
@@ -37,9 +41,9 @@ func TestParse(t *testing.T) {
 		"{{.Id}}",
 		"BAT0",
 	}, {
-		&Battery{0, &battery.Battery{State: battery.Charging}, 0},
-		"{{.StateColor}}{{.State}}",
-		"Charging", // No colors by default
+		&Battery{0, &battery.Battery{State: battery.Unknown}, 0},
+		"{{.State}}",
+		"Unknown",
 	}, {
 		&Battery{0, &battery.Battery{Current: 1, Full: 1}, 0},
 		"{{.Bar}} {{.Percent}}%",
@@ -60,6 +64,10 @@ func TestParse(t *testing.T) {
 		&Battery{0, &battery.Battery{State: battery.Full, Current: 1, Full: 1, ChargeRate: 1}, oneMinute},
 		"{{.Ftime \"%02d:%02d:%02d\"}}",
 		"00:01:00",
+	}, {
+		&Battery{0, &battery.Battery{State: battery.Empty, Current: 0, Full: 1, ChargeRate: 0}, 0},
+		"#[bg={{.StateColor}}]{{.Percent}}%#[default]",
+		"#[bg=red]0%#[default]",
 	}}
 	for i, c := range cases {
 		str, err := c.battery.Parse(c.in)
@@ -70,8 +78,8 @@ func TestParse(t *testing.T) {
 			t.Errorf("%d: %s", i, err)
 			return
 		}
-		if colorFlag || tmuxFlag {
-			str = ColorString(str, c.battery.StateColor())
+		if colorFlag {
+			str = ColorString(str, StateColor(c.battery))
 		}
 		if str != c.out {
 			t.Errorf("%d: %s != %s", i, str, c.out)

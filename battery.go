@@ -95,6 +95,10 @@ func (bat *Battery) State() string {
 	return bat.Battery.State.String()
 }
 
+func (bat *Battery) StateColor() string {
+	return StateColor(bat)
+}
+
 func (bat *Battery) IsEmpty() bool {
 	return bat.Battery.State == battery.Empty
 }
@@ -109,35 +113,6 @@ func (bat *Battery) IsCharging() bool {
 
 func (bat *Battery) IsDischarging() bool {
 	return bat.Battery.State == battery.Discharging
-}
-
-func (bat *Battery) StateColor() string {
-	// Return an empty string if colored output is disabled
-	if colors == nil {
-		return ""
-	}
-	var clr string
-	switch {
-	case bat.IsEmpty():
-		clr = colors.Get(EmptyColor)
-	case bat.IsFull():
-		clr = colors.Get(FullColor)
-	case bat.IsCharging():
-		clr = colors.Get(ChargingColor)
-	case bat.IsDischarging():
-		percent := bat.PercentFloat()
-		switch {
-		case percent >= 75:
-			clr = colors.Get(HighColor)
-		case percent >= 25: // && percent < 75:
-			clr = colors.Get(MediumColor)
-		case percent < 25:
-			clr = colors.Get(LowColor)
-		}
-	default:
-		clr = colors.Get(DefaultColor)
-	}
-	return clr
 }
 
 // func (bat *Battery) ResetColor() string {

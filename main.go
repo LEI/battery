@@ -44,10 +44,10 @@ func main() {
 		exit(1, fmt.Errorf("No batteries"))
 	}
 	switch {
-	case colorFlag:
-		colors = &asciiColors{}
 	case tmuxFlag:
 		colors = &tmuxColors{}
+	default: // case colorFlag:
+		colors = &asciiColors{}
 	}
 	var out []string
 	for i, bat := range batteries {
@@ -57,8 +57,8 @@ func main() {
 		if err != nil {
 			exit(1, err)
 		}
-		if colorFlag || tmuxFlag {
-			str = ColorString(str, b.StateColor())
+		if colorFlag {
+			str = ColorString(str, StateColor(b))
 		}
 		out = append(out, str)
 	}
@@ -71,6 +71,32 @@ func ColorString(str string, clr string) string {
 		format = "#[fg=%s]%s#[%s]"
 	}
 	return fmt.Sprintf(format, clr, str, colors.Get(DefaultColor))
+}
+
+func StateColor(bat *Battery) string {
+	// if colors == nil { return "" }
+	var clr string
+	switch {
+	case bat.IsEmpty():
+		clr = colors.Get(EmptyColor)
+	case bat.IsFull():
+		clr = colors.Get(FullColor)
+	case bat.IsCharging():
+		clr = colors.Get(ChargingColor)
+	case bat.IsDischarging():
+		percent := bat.PercentFloat()
+		switch {
+		case percent >= 75:
+			clr = colors.Get(HighColor)
+		case percent >= 25: // && percent < 75:
+			clr = colors.Get(MediumColor)
+		case percent < 25:
+			clr = colors.Get(LowColor)
+		}
+	default:
+		clr = colors.Get(DefaultColor)
+	}
+	return clr
 }
 
 func GetBar(val float64, max float64) string {
