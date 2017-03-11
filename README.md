@@ -14,4 +14,3 @@ Default format: `{{.Id}}: {{.State}}, {{.Percent}}%{{if ne .Duration ""}}, {{end
     $ battery [flags] [format]
     # -c, --color
     # -t, --tmux
-
