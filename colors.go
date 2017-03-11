@@ -9,9 +9,9 @@ var (
 	EmptyColor    = "red"
 	FullColor     = "green"
 	ChargingColor = "green"
-	HighColor = "none" // Discharging, over 75%
-	MediumColor = "yellow" // Discharging, between 25 and 75%
-	LowColor = "red" // Discharging, below 25%
+	HighColor     = "none"   // Discharging, over 75%
+	MediumColor   = "yellow" // Discharging, between 25 and 75%
+	LowColor      = "red"    // Discharging, below 25%
 )
 
 var colorMap = map[string]string{
