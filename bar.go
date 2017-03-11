@@ -35,7 +35,7 @@ func printN(char string, times int) string {
 		return ""
 	}
 	str := fmt.Sprintf("%s", char)
-	str += printN(char, times - 1)
+	str += printN(char, times-1)
 	return str
 }
 
