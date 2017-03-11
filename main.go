@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/joliv/spark"
 	"github.com/spf13/pflag"
 )
 
@@ -13,16 +12,17 @@ var (
 	defaultFmt   = "{{.Id}}: {{.State}}, {{.Percent}}%{{if ne .Duration \"\"}}, {{end}}{{.Duration}}"
 	outputSep    = "\n"
 	outputFormat = "%s\n"
-	tmuxOutput   bool
-	colorOutput  bool
+	colorFlag    bool
+	sparkFlag    bool
+	tmuxFlag     bool
 	colors       Colors
 )
 
 func init() {
-	pflag.BoolVarP(&colorOutput, "color", "c", colorOutput, "Enable color output")
-	pflag.BoolVarP(&tmuxOutput, "tmux", "t", tmuxOutput, "Enable tmux status bar colors")
+	pflag.BoolVarP(&colorFlag, "color", "c", colorFlag, "Enable color output")
+	pflag.BoolVarP(&sparkFlag, "spark", "s", sparkFlag, "Enable sparkline bar")
+	pflag.BoolVarP(&tmuxFlag, "tmux", "t", tmuxFlag, "Enable tmux status bar colors")
 	// pflag.StringVarP(&outputSep, "new-line", "n", outputSep, "Lines separator")
-	// pflag.BoolVarP(&asciiBar, "ascii", "a", asciiBar, "Enable ascii bar left to percentage")
 	// pflag.IntVarP(&limit, "limit", "l", limit, "Limit lines")
 }
 
@@ -44,9 +44,9 @@ func main() {
 		exit(1, fmt.Errorf("No batteries"))
 	}
 	switch {
-	case colorOutput:
+	case colorFlag:
 		colors = &asciiColors{}
-	case tmuxOutput:
+	case tmuxFlag:
 		colors = &tmuxColors{}
 	}
 	var out []string
@@ -57,7 +57,7 @@ func main() {
 		if err != nil {
 			exit(1, err)
 		}
-		if colorOutput || tmuxOutput {
+		if colorFlag || tmuxFlag {
 			str = ColorString(str, b.StateColor())
 		}
 		out = append(out, str)
@@ -67,10 +67,19 @@ func main() {
 
 func ColorString(str string, clr string) string {
 	var format = "%s%s%s"
-	if tmuxOutput {
+	if tmuxFlag {
 		format = "#[fg=%s]%s#[%s]"
 	}
 	return fmt.Sprintf(format, clr, str, colors.Get(DefaultColor))
+}
+
+func GetBar(val float64, max float64) string {
+	switch {
+	case sparkFlag:
+		return sparkBar(val, max)
+	default:
+		return asciiBar(val, max)
+	}
 }
 
 func formatTime(hours, minutes, seconds int) string {
@@ -86,15 +95,6 @@ func formatTime(hours, minutes, seconds int) string {
 		str = fmt.Sprintf("%dh%dm", hours, minutes)
 	}
 	return str
-}
-
-func sparkBar(val float64, max float64) string {
-	sparkLine := spark.Line([]float64{0, val, max})
-	runes := []rune(sparkLine)
-	if len(runes) != 3 {
-		panic(fmt.Errorf("invalid sparkline length (%d != 3): %s", len(runes), string(runes)))
-	}
-	return fmt.Sprintf("%s", string(runes[1]))
 }
 
 func exit(code int, msg interface{}) {

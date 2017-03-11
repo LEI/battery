@@ -160,8 +160,8 @@ func (bat *Battery) Fpercent(format string) string {
 	return fmt.Sprintf(format, bat.Percent())
 }
 
-func (bat *Battery) Spark() string {
-	return sparkBar(bat.Current, bat.Full)
+func (bat *Battery) Bar() string {
+	return GetBar(bat.Current, bat.Full)
 }
 
 func (bat *Battery) Duration() string {

@@ -24,6 +24,9 @@ func TestGetAll(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
+
+	sparkFlag = true
+
 	cases := []struct {
 		battery *Battery
 		in      string
@@ -39,7 +42,7 @@ func TestParse(t *testing.T) {
 		"Charging", // No colors by default
 	}, {
 		&Battery{0, &battery.Battery{Current: 1, Full: 1}, 0},
-		"{{.Spark}} {{.Percent}}%",
+		"{{.Bar}} {{.Percent}}%",
 		"█ 100%",
 	}, {
 		&Battery{0, &battery.Battery{State: battery.Full, Current: 1, Full: 1, ChargeRate: 0}, 0},
@@ -67,7 +70,7 @@ func TestParse(t *testing.T) {
 			t.Errorf("%d: %s", i, err)
 			return
 		}
-		if colorOutput || tmuxOutput {
+		if colorFlag || tmuxFlag {
 			str = ColorString(str, c.battery.StateColor())
 		}
 		if str != c.out {
