@@ -26,8 +26,8 @@ func TestGetAll(t *testing.T) {
 func TestParse(t *testing.T) {
 	cases := []struct {
 		battery *Battery
-		in string
-		out string
+		in      string
+		out     string
 		// f func(int, *Battery, string) bool
 	}{{
 		&Battery{0, &battery.Battery{}, 0},
@@ -35,8 +35,8 @@ func TestParse(t *testing.T) {
 		"BAT0",
 	}, {
 		&Battery{0, &battery.Battery{State: battery.Charging}, 0},
-		"{{.State}}",
-		"Charging",
+		"{{.StateColor}}{{.State}}",
+		"Charging", // No colors by default
 	}, {
 		&Battery{0, &battery.Battery{Current: 1, Full: 1}, 0},
 		"{{.Spark}} {{.Percent}}%",
@@ -60,16 +60,16 @@ func TestParse(t *testing.T) {
 	}}
 	for i, c := range cases {
 		str, err := c.battery.Parse(c.in)
+		// if !reflect.DeepEqual(err, c.errOut) {
+		// 	t.Errorf("%d: %v != %v", i, err, c.errOut)
+		// }
 		if err != nil {
 			t.Errorf("%d: %s", i, err)
 			return
 		}
-		// if colorOutput || tmuxOutput {
-		// 	str = colorString(str, getStateColor(b))
-		// }
-		// if !reflect.DeepEqual(err, c.errorsOut) {
-		// 	t.Errorf("%d: %v != %v", i, err, c.errorsOut)
-		// }
+		if colorOutput || tmuxOutput {
+			str = ColorString(str, c.battery.StateColor())
+		}
 		if str != c.out {
 			t.Errorf("%d: %s != %s", i, str, c.out)
 		}

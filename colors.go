@@ -5,43 +5,42 @@ import (
 )
 
 var (
-	FullColor = "green"
+	DefaultColor  = "none"
+	EmptyColor    = "red"
+	FullColor     = "green"
 	ChargingColor = "green"
-	// Discharging
+	// Discharging, over 75%
 	HighColor = "none"
+	// Discharging, between 25 and 75%
 	MediumColor = "yellow"
+	// Discharging, below 25%
 	LowColor = "red"
 )
 
 var colorMap = map[string]string{
-	"none": "0",
-	"default": "0",
-	"red": "0;31",
-	"green": "0;32",
+	"none":   "0",
+	"red":    "0;31",
+	"green":  "0;32",
 	"yellow": "0;33",
-	"white": "0;37",
+	"white":  "0;37",
 }
 
 type Colors interface {
 	Get(key string) string
 }
 
-type asciiColors struct {}
+type asciiColors struct{}
 
 func (c *asciiColors) Get(key string) string {
-	return fmt.Sprintf("\033[%sm", colorMap[key])
+	clr, ok := colorMap[key]
+	if !ok {
+		return ""
+	}
+	return fmt.Sprintf("\033[%sm", clr)
 }
 
-type tmuxColors struct {}
+type tmuxColors struct{}
 
 func (c *tmuxColors) Get(key string) string {
 	return key
-}
-
-func colorString(str string, clr string) string {
-	var format = "%s%s%s"
-	if tmuxOutput {
-		format = "#[fg=%s]%s#[%s]"
-	}
-	return fmt.Sprintf(format, clr, str, colors.Get("default"))
 }

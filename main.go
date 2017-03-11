@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spf13/pflag"
 	"github.com/joliv/spark"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -58,32 +58,19 @@ func main() {
 			exit(1, err)
 		}
 		if colorOutput || tmuxOutput {
-			str = colorString(str, colorState(b))
+			str = ColorString(str, b.StateColor())
 		}
 		out = append(out, str)
 	}
 	fmt.Printf(outputFormat, strings.Join(out, outputSep))
 }
 
-func colorState(bat *Battery) string {
-	var clr string
-	switch {
-	case bat.IsCharging():
-		clr = colors.Get(ChargingColor)
-	case bat.IsDischarging():
-		percent := bat.PercentFloat()
-		switch {
-		case percent >= 75:
-			clr = colors.Get(HighColor)
-		case percent >= 25: // && percent < 75:
-			clr = colors.Get(MediumColor)
-		case percent < 25:
-			clr = colors.Get(LowColor)
-		}
-	default:
-		clr = colors.Get(FullColor)
+func ColorString(str string, clr string) string {
+	var format = "%s%s%s"
+	if tmuxOutput {
+		format = "#[fg=%s]%s#[%s]"
 	}
-	return clr
+	return fmt.Sprintf(format, clr, str, colors.Get(DefaultColor))
 }
 
 func formatTime(hours, minutes, seconds int) string {
