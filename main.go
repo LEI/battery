@@ -87,8 +87,8 @@ func getStateColor(bat *Battery) string {
 }
 
 func formatTime(hours, minutes, seconds int) string {
-	var str string
-	switch 0 { // Pad with zero: %02d
+	var str string // Pad int with zero: %02d, Truncate string: %.0s
+	switch 0 {
 	case hours + minutes + seconds:
 		return "" // fully charged
 	case hours + minutes:

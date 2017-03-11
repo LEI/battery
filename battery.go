@@ -78,6 +78,14 @@ func (bat *Battery) State() string {
 	return bat.Battery.State.String()
 }
 
+func (bat *Battery) IsEmpty() bool {
+	return bat.Battery.State == battery.Empty
+}
+
+func (bat *Battery) IsFull() bool {
+	return bat.Battery.State == battery.Full
+}
+
 func (bat *Battery) IsCharging() bool {
 	return bat.Battery.State == battery.Charging
 }
@@ -109,6 +117,8 @@ func (bat *Battery) Spark() string {
 func (bat *Battery) Duration() string {
 	var str string
 	switch {
+	case bat.IsEmpty(), bat.IsFull():
+		return ""
 	case bat.IsCharging():
 		if bat.ChargeRate == 0 {
 			return "charging at zero rate - will never fully charge"
@@ -120,7 +130,7 @@ func (bat *Battery) Duration() string {
 		}
 		str = "remaining"
 	default:
-		return "not charging, not discharging"
+		return "unknown state"
 	}
 	dur := formatTime(bat.Hours(), bat.Minutes(), bat.Seconds())
 	if dur != "" {
