@@ -10,11 +10,6 @@ import (
 	"github.com/joliv/spark"
 )
 
-var (
-	Charging = battery.Charging
-	Discharging = battery.Discharging
-)
-
 func GetAll() ([]*battery.Battery, error) {
 	batteries, err := battery.GetAll()
 	return batteries, err
@@ -111,18 +106,11 @@ func (bat *Battery) Duration() string {
 	default:
 		return "not charging, not discharging"
 	}
-	hours, minutes, seconds := bat.Hours(), bat.Minutes(), bat.Seconds()
-	switch 0 { // %02d
-	case hours + minutes + seconds:
-		return "" // fully charged
-	case hours + minutes:
-		str = fmt.Sprintf("%ds %s", seconds, str)
-	case hours:
-		str = fmt.Sprintf("%dm %s", minutes, str)
-	default:
-		str = fmt.Sprintf("%dh%dm %s", hours, minutes, str)
+	dur := formatDuration(bat)
+	if dur != "" {
+		str = fmt.Sprintf("%s %s", dur, str)
 	}
-	return fmt.Sprintf("%s", str)
+	return str
 }
 
 func (bat *Battery) ParseDuration() time.Duration {
@@ -136,15 +124,16 @@ func (bat *Battery) ParseDuration() time.Duration {
 			return time.Duration(-1)
 		}
 		timeNum = (bat.Full - bat.Current) / bat.ChargeRate
-	case bat.IsCharging():
+	case bat.IsDischarging():
 		if bat.ChargeRate == 0 {
 			return time.Duration(-1)
 		}
 		timeNum = bat.Current / bat.ChargeRate
 	default:
-		return time.Duration(0)
+		return time.Duration(-1)
 	}
-	duration, err := time.ParseDuration(fmt.Sprintf("%fh", timeNum))
+	dur := fmt.Sprintf("%fh", timeNum)
+	duration, err := time.ParseDuration(dur)
 	if err != nil {
 		panic(err)
 	}
@@ -152,30 +141,30 @@ func (bat *Battery) ParseDuration() time.Duration {
 	return duration
 }
 
-func (bat *Battery) Hours() int {
+func (bat *Battery) Hours() int64 {
 	duration := bat.ParseDuration()
 	h := duration.Hours()
-	return int(h) % int(time.Hour)
+	return int64(h) % 60 // int64(time.Hour / time.Minute)
 }
 
 func (bat *Battery) Fhours(format string) string {
 	return fmt.Sprintf(format, bat.Hours())
 }
 
-func (bat *Battery) Minutes() int {
+func (bat *Battery) Minutes() int64 {
 	duration := bat.ParseDuration()
 	m := duration.Minutes()
-	return int(m) % int(time.Minute)
+	return int64(m) % 60 // int64(time.Minute / time.Second)
 }
 
 func (bat *Battery) Fminutes(format string) string {
 	return fmt.Sprintf(format, bat.Minutes())
 }
 
-func (bat *Battery) Seconds() int {
+func (bat *Battery) Seconds() int64 {
 	duration := bat.ParseDuration()
 	s := duration.Seconds()
-	return int(s) % int(time.Second)
+	return int64(s) % 60 // int64(time.Minute / time.Second)
 }
 
 func (bat *Battery) Fseconds(format string) string {

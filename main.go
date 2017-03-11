@@ -105,6 +105,22 @@ func getStateColor(bat *Battery) string {
 	return clr
 }
 
+func formatDuration(bat *Battery) string {
+	var str string
+	hours, minutes, seconds := bat.Hours(), bat.Minutes(), bat.Seconds()
+	switch int64(0) { // Pad with zero: %02d
+	case hours + minutes + seconds:
+		return "" // fully charged
+	case hours + minutes:
+		str = fmt.Sprintf("%ds", seconds)
+	case hours:
+		str = fmt.Sprintf("%dm", minutes)
+	default:
+		str = fmt.Sprintf("%dh%dm", hours, minutes)
+	}
+	return str
+}
+
 func exit(code int, msg interface{}) {
 	fmt.Fprintln(os.Stderr, msg)
 	os.Exit(code)
