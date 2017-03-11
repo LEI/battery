@@ -36,6 +36,23 @@ func GetAll() ([]*battery.Battery, error) {
 	return batteries, err
 }
 
+func NewBattery(idx int, bat *battery.Battery) *Battery {
+	return &Battery{idx, bat, time.Duration(0)}
+}
+
+/* battery.Battery:
+// Current battery state.
+State State
+// Current (momentary) capacity (in mWh).
+Current float64
+// Last known full capacity (in mWh).
+Full float64
+// Reported design capacity (in mWh).
+Design float64
+// Current (momentary) charge rate (in mW).
+// It is always non-negative, consult .State field to check
+// whether it means charging or discharging.
+ChargeRate float64*/
 type Battery struct {
 	idx int
 	*battery.Battery
@@ -43,8 +60,8 @@ type Battery struct {
 	// fmt string // template.Template
 }
 
-func New(idx int, bat *battery.Battery) *Battery {
-	return &Battery{idx, bat, time.Duration(0)}
+func (bat *Battery) String() string {
+	return fmt.Sprintf("%+v", *bat)
 }
 
 func (bat *Battery) Parse(tpl string) (string, error) {

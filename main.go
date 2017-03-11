@@ -51,21 +51,21 @@ func main() {
 	}
 	var out []string
 	for i, bat := range batteries {
-		b := New(i, bat)
+		b := &Battery{i, bat, 0}
 		// str := b.String()
 		str, err := b.Parse(defaultFmt)
 		if err != nil {
 			exit(1, err)
 		}
 		if colorOutput || tmuxOutput {
-			str = colorString(str, getStateColor(b))
+			str = colorString(str, colorState(b))
 		}
 		out = append(out, str)
 	}
 	fmt.Printf(outputFormat, strings.Join(out, outputSep))
 }
 
-func getStateColor(bat *Battery) string {
+func colorState(bat *Battery) string {
 	var clr string
 	switch {
 	case bat.IsCharging():
