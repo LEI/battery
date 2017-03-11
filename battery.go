@@ -24,6 +24,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"text/template"
 	"time"
 
@@ -121,65 +122,86 @@ func (bat *Battery) Duration() string {
 	default:
 		return "not charging, not discharging"
 	}
-	dur := formatDuration(bat)
+	dur := formatTime(bat.Hours(), bat.Minutes(), bat.Seconds())
 	if dur != "" {
 		str = fmt.Sprintf("%s %s", dur, str)
 	}
 	return str
 }
 
-func (bat *Battery) ParseDuration() time.Duration {
-	if bat.dur != time.Duration(0) {
-		return bat.dur
-	}
+func (bat *Battery) Ftime(format string) string {
+	return fmt.Sprintf(format, bat.Hours(), bat.Minutes(), bat.Seconds())
+}
+
+func (bat *Battery) Charge() float64 {
 	var timeNum float64
 	switch {
 	case bat.IsCharging():
 		if bat.ChargeRate == 0 {
-			return time.Duration(-1)
+			return -1
 		}
 		timeNum = (bat.Full - bat.Current) / bat.ChargeRate
 	case bat.IsDischarging():
 		if bat.ChargeRate == 0 {
-			return time.Duration(-1)
+			return -1
 		}
 		timeNum = bat.Current / bat.ChargeRate
 	default:
-		return time.Duration(-1)
+		return 0
 	}
+	return timeNum
+}
+
+func (bat *Battery) ParseDuration() (time.Duration, error) {
+	if bat.dur != time.Duration(0) {
+		return bat.dur, nil
+	}
+	timeNum := bat.Charge()
 	dur := fmt.Sprintf("%fh", timeNum)
 	duration, err := time.ParseDuration(dur)
 	if err != nil {
-		panic(err)
+		return duration, err
 	}
 	bat.dur = duration
-	return duration
+	return duration, nil
 }
 
-func (bat *Battery) Hours() int64 {
-	duration := bat.ParseDuration()
+func (bat *Battery) Hours() int {
+	duration, err := bat.ParseDuration()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
 	h := duration.Hours()
-	return int64(h) % 60 // int64(time.Hour / time.Minute)
+	return int(h) % 60
 }
 
 func (bat *Battery) Fhours(format string) string {
 	return fmt.Sprintf(format, bat.Hours())
 }
 
-func (bat *Battery) Minutes() int64 {
-	duration := bat.ParseDuration()
+func (bat *Battery) Minutes() int {
+	duration, err := bat.ParseDuration()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
 	m := duration.Minutes()
-	return int64(m) % 60 // int64(time.Minute / time.Second)
+	return int(m) % 60
 }
 
 func (bat *Battery) Fminutes(format string) string {
 	return fmt.Sprintf(format, bat.Minutes())
 }
 
-func (bat *Battery) Seconds() int64 {
-	duration := bat.ParseDuration()
+func (bat *Battery) Seconds() int {
+	duration, err := bat.ParseDuration()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
 	s := duration.Seconds()
-	return int64(s) % 60 // int64(time.Minute / time.Second)
+	return int(s) % 60
 }
 
 func (bat *Battery) Fseconds(format string) string {

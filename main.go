@@ -86,10 +86,9 @@ func getStateColor(bat *Battery) string {
 	return clr
 }
 
-func formatDuration(bat *Battery) string {
+func formatTime(hours, minutes, seconds int) string {
 	var str string
-	hours, minutes, seconds := bat.Hours(), bat.Minutes(), bat.Seconds()
-	switch int64(0) { // Pad with zero: %02d
+	switch 0 { // Pad with zero: %02d
 	case hours + minutes + seconds:
 		return "" // fully charged
 	case hours + minutes:
