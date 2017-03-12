@@ -5,15 +5,20 @@ import (
 )
 
 var (
-	// Reset to default
+	// DefaultColor used to reset foreground and background
 	DefaultColor  = "default"
-	// Empty state
+	// EmptyColor when empty battery charge
 	EmptyColor    = "red"
-	FullColor     = "green"   // Full charge
-	ChargingColor = "green"   // Plugged
-	HighColor     = "none"    // Discharging, over 75%
-	MediumColor   = "yellow"  // Discharging, between 25 and 75%
-	LowColor      = "red"     // Discharging, below 25%
+	// FullColor when full battery charge
+	FullColor     = "green"
+	// ChargingColor when plugged in
+	ChargingColor = "green"
+	// HighColor used when discharging, over 75%
+	HighColor     = "none"
+	// MediumColor used when discharging, between 25 and 75%
+	MediumColor   = "yellow"
+	// Lowolor used when discharging, below 25%
+	LowColor      = "red"
 )
 
 var colorMap = map[string]string{
