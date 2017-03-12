@@ -5,8 +5,10 @@ import (
 )
 
 var (
-	DefaultColor  = "default" // Reset to default
-	EmptyColor    = "red"     // Empty state
+	// Reset to default
+	DefaultColor  = "default"
+	// Empty state
+	EmptyColor    = "red"
 	FullColor     = "green"   // Full charge
 	ChargingColor = "green"   // Plugged
 	HighColor     = "none"    // Discharging, over 75%
