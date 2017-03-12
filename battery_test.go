@@ -79,7 +79,7 @@ func TestParse(t *testing.T) {
 			return
 		}
 		if colorFlag {
-			str = ColorString(str, StateColor(c.battery))
+			str = ColorString(str, StateColorString(c.battery))
 		}
 		if str != c.out {
 			t.Errorf("%d: %s != %s", i, str, c.out)

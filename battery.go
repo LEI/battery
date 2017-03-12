@@ -61,7 +61,18 @@ type Battery struct {
 }
 
 func (bat *Battery) String() string {
-	return fmt.Sprintf("%+v", *bat)
+	str, _ := bat.Template(defaultFmt)
+	return fmt.Sprintf("%s", str)
+}
+
+func (bat *Battery) Template(tpl string) (string, error) {
+	str, err := bat.Parse(tpl)
+	if err != nil || str == "" {
+		return str, err
+		// fmt.Fprintf(os.Stderr, "Invalid battery %s", err)
+		// os.Exit(1)
+	}
+	return fmt.Sprintf("%s", str), nil
 }
 
 func (bat *Battery) Parse(tpl string) (string, error) {
@@ -96,7 +107,7 @@ func (bat *Battery) State() string {
 }
 
 func (bat *Battery) StateColor() string {
-	return StateColor(bat)
+	return StateColorString(bat)
 }
 
 func (bat *Battery) IsEmpty() bool {
@@ -140,28 +151,11 @@ func (bat *Battery) Bar() string {
 }
 
 func (bat *Battery) Duration() string {
-	var str string
-	switch {
-	case bat.IsEmpty(), bat.IsFull():
-		return ""
-	case bat.IsCharging():
-		if bat.ChargeRate == 0 {
-			return "charging at zero rate - will never fully charge"
-		}
-		str = "until charged"
-	case bat.IsDischarging():
-		if bat.ChargeRate == 0 {
-			return "discharging at zero rate - will never fully discharge"
-		}
-		str = "remaining"
-	default:
-		return "unknown state"
-	}
-	dur := formatTime(bat.Hours(), bat.Minutes(), bat.Seconds())
-	if dur != "" {
-		str = fmt.Sprintf("%s %s", dur, str)
-	}
-	return str
+	return StateDurationString(bat)
+}
+
+func (bat *Battery) Time() string {
+	return bat.Ftime("%02d:%02d:%02d")
 }
 
 func (bat *Battery) Ftime(format string) string {

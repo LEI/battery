@@ -34,14 +34,17 @@ func main() {
 			defaultFmt = pflag.Arg(0)
 		}
 	default:
-		exit(1, fmt.Sprintf("Invalid number of args: %d", pflag.NArg()))
+		fmt.Fprintf(os.Stderr, "Invalid number of args: %d\n", pflag.NArg())
+		os.Exit(1)
 	}
 	batteries, err := GetAll()
 	if err != nil {
-		exit(1, err)
+		fmt.Fprintf(os.Stderr, "%s", err)
+		os.Exit(1)
 	}
 	if len(batteries) == 0 {
-		exit(1, fmt.Errorf("No batteries"))
+		fmt.Fprintf(os.Stderr, "%s\n", "No batteries")
+		os.Exit(1)
 	}
 	switch {
 	case tmuxFlag:
@@ -53,12 +56,9 @@ func main() {
 	for i, bat := range batteries {
 		b := &Battery{i, bat, 0}
 		// str := b.String()
-		str, err := b.Parse(defaultFmt)
-		if err != nil {
-			exit(1, err)
-		}
+		str := b.String()
 		if colorFlag {
-			str = ColorString(str, StateColor(b))
+			str = ColorString(str, StateColorString(b))
 		}
 		out = append(out, str)
 	}
@@ -73,7 +73,7 @@ func ColorString(str string, clr string) string {
 	return fmt.Sprintf(format, clr, str, colors.Get(DefaultColor))
 }
 
-func StateColor(bat *Battery) string {
+func StateColorString(bat *Battery) string {
 	// if colors == nil { return "" }
 	var clr string
 	switch {
@@ -99,16 +99,32 @@ func StateColor(bat *Battery) string {
 	return clr
 }
 
-func GetBar(val float64, max float64) string {
+func StateDurationString(bat *Battery) string {
+	var str string
 	switch {
-	case sparkFlag:
-		return sparkBar(val, max)
+	case bat.IsEmpty(), bat.IsFull():
+		return ""
+	case bat.IsCharging():
+		if bat.ChargeRate == 0 {
+			return "charging at zero rate - will never fully charge"
+		}
+		str = "until charged"
+	case bat.IsDischarging():
+		if bat.ChargeRate == 0 {
+			return "discharging at zero rate - will never fully discharge"
+		}
+		str = "remaining"
 	default:
-		return asciiBar(val, max)
+		return "unknown state"
 	}
+	dur := FormatDurationString(bat.Hours(), bat.Minutes(), bat.Seconds())
+	if dur != "" {
+		str = fmt.Sprintf("%s %s", dur, str)
+	}
+	return str
 }
 
-func formatTime(hours, minutes, seconds int) string {
+func FormatDurationString(hours, minutes, seconds int) string {
 	var str string // Pad int with zero: %02d, Truncate string: %.0s
 	switch 0 {
 	case hours + minutes + seconds:
@@ -123,7 +139,16 @@ func formatTime(hours, minutes, seconds int) string {
 	return str
 }
 
-func exit(code int, msg interface{}) {
-	fmt.Fprintln(os.Stderr, msg)
-	os.Exit(code)
+func GetBar(val float64, max float64) string {
+	switch {
+	case sparkFlag:
+		return sparkBar(val, max)
+	default:
+		return asciiBar(val, max)
+	}
 }
+
+// func exit(code int, msg interface{}) {
+// 	fmt.Fprintln(os.Stderr, msg)
+// 	os.Exit(code)
+// }
