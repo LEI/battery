@@ -18,7 +18,9 @@ Based on [distatus/battery](https://github.com/distatus/battery)
 Default format
 
     $ battery '{{.Id}}: {{.State}}, {{.Percent}}%{{if ne .Duration ""}}, {{end}}{{.Duration}}'
+    BAT0: Full, 100%
 
 Example
 
     $ battery --spark '{{.Bar}}'
+    █ 100%
