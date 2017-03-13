@@ -60,7 +60,7 @@ func main() {
 	for i, bat := range batteries {
 		b := &Battery{i, bat, 0}
 		str := b.String()
-		if colorFlag {
+		if colorFlag || tmuxFlag {
 			str = ColorString(str, StateColorString(b))
 		}
 		out = append(out, str)

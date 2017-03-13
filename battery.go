@@ -69,7 +69,11 @@ type Battery struct {
 }
 
 func (bat *Battery) String() string {
-	str, _ := bat.Template(defaultFmt)
+	str, err := bat.Template(defaultFmt)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Invalid battery %s", err)
+		os.Exit(1)
+	}
 	return fmt.Sprintf("%s", str)
 }
 
@@ -77,8 +81,6 @@ func (bat *Battery) Template(tpl string) (string, error) {
 	str, err := bat.Parse(tpl)
 	if err != nil || str == "" {
 		return str, err
-		// fmt.Fprintf(os.Stderr, "Invalid battery %s", err)
-		// os.Exit(1)
 	}
 	return fmt.Sprintf("%s", str), nil
 }
