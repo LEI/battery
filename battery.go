@@ -32,9 +32,11 @@ import (
 )
 
 var (
-	IsNotCharging = fmt.Errorf("will never fully charge")
+	Empty            = fmt.Errorf("empty battery")
+	Full             = fmt.Errorf("full battery")
+	IsNotCharging    = fmt.Errorf("will never fully charge")
 	IsNotDischarging = fmt.Errorf("will never fully discharge")
-	IsUnknown = fmt.Errorf("unkwnown state")
+	IsUnknown        = fmt.Errorf("unkwnown state")
 )
 
 func GetAll() ([]*battery.Battery, error) {
@@ -159,8 +161,8 @@ func (bat *Battery) Bar() string {
 func (bat *Battery) Duration() string {
 	str, err := bat.Remaining()
 	switch err {
-	case nil:
-	case IsNotCharging, IsNotDischarging, IsUnknown:
+	case nil: // continue
+	case Empty, Full, IsNotCharging, IsNotDischarging, IsUnknown:
 		return str
 	}
 	dur := FormatDurationString(bat.Hours(), bat.Minutes(), bat.Seconds())
@@ -173,8 +175,10 @@ func (bat *Battery) Duration() string {
 func (bat *Battery) Remaining() (string, error) {
 	var str string
 	switch {
-	case bat.IsEmpty(), bat.IsFull():
-		return "", nil
+	case bat.IsEmpty():
+		return "", Empty
+	case bat.IsFull():
+		return "", Full
 	case bat.IsCharging():
 		if bat.ChargeRate == 0 {
 			return "discharging at zero rate", IsNotCharging
