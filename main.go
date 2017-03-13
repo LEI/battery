@@ -149,8 +149,3 @@ func GetBar(val float64, max float64) string {
 		return asciiBar(val, max)
 	}
 }
-
-// func exit(code int, msg interface{}) {
-// 	fmt.Fprintln(os.Stderr, msg)
-// 	os.Exit(code)
-// }
