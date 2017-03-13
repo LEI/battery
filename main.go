@@ -76,6 +76,30 @@ func ColorString(str string, clr string) string {
 	return fmt.Sprintf(format, clr, str, colors.Get(DefaultColor))
 }
 
+func FormatDurationString(hours, minutes, seconds int) string {
+	var str string // Pad int with zero: %02d, Truncate string: %.0s
+	switch 0 {
+	case hours + minutes + seconds:
+		return "" // fully charged
+	case hours + minutes:
+		str = fmt.Sprintf("%ds", seconds)
+	case hours:
+		str = fmt.Sprintf("%dm", minutes)
+	default:
+		str = fmt.Sprintf("%dh%dm", hours, minutes)
+	}
+	return str
+}
+
+func GetBar(val float64, max float64) string {
+	switch {
+	case sparkFlag:
+		return sparkBar(val, max)
+	default:
+		return asciiBar(val, max)
+	}
+}
+
 func StateColorString(bat *Battery) string {
 	var clr string
 	switch {
@@ -99,53 +123,4 @@ func StateColorString(bat *Battery) string {
 		clr = colors.Get(DefaultColor)
 	}
 	return clr
-}
-
-func StateDurationString(bat *Battery) string {
-	var str string
-	switch {
-	case bat.IsEmpty(), bat.IsFull():
-		return ""
-	case bat.IsCharging():
-		if bat.ChargeRate == 0 {
-			return "charging at zero rate - will never fully charge"
-		}
-		str = "until charged"
-	case bat.IsDischarging():
-		if bat.ChargeRate == 0 {
-			return "discharging at zero rate - will never fully discharge"
-		}
-		str = "remaining"
-	default:
-		return "unknown state"
-	}
-	dur := FormatDurationString(bat.Hours(), bat.Minutes(), bat.Seconds())
-	if dur != "" {
-		str = fmt.Sprintf("%s %s", dur, str)
-	}
-	return str
-}
-
-func FormatDurationString(hours, minutes, seconds int) string {
-	var str string // Pad int with zero: %02d, Truncate string: %.0s
-	switch 0 {
-	case hours + minutes + seconds:
-		return "" // fully charged
-	case hours + minutes:
-		str = fmt.Sprintf("%ds", seconds)
-	case hours:
-		str = fmt.Sprintf("%dm", minutes)
-	default:
-		str = fmt.Sprintf("%dh%dm", hours, minutes)
-	}
-	return str
-}
-
-func GetBar(val float64, max float64) string {
-	switch {
-	case sparkFlag:
-		return sparkBar(val, max)
-	default:
-		return asciiBar(val, max)
-	}
 }

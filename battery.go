@@ -31,6 +31,12 @@ import (
 	"github.com/distatus/battery"
 )
 
+var (
+	IsNotCharging = fmt.Errorf("will never fully charge")
+	IsNotDischarging = fmt.Errorf("will never fully discharge")
+	IsUnknown = fmt.Errorf("unkwnown state")
+)
+
 func GetAll() ([]*battery.Battery, error) {
 	batteries, err := battery.GetAll()
 	return batteries, err
@@ -151,7 +157,38 @@ func (bat *Battery) Bar() string {
 }
 
 func (bat *Battery) Duration() string {
-	return StateDurationString(bat)
+	str, err := bat.Remaining()
+	switch err {
+	case nil:
+	case IsNotCharging, IsNotDischarging, IsUnknown:
+		return str
+	}
+	dur := FormatDurationString(bat.Hours(), bat.Minutes(), bat.Seconds())
+	if dur != "" {
+		str = fmt.Sprintf("%s %s", dur, str)
+	}
+	return str
+}
+
+func (bat *Battery) Remaining() (string, error) {
+	var str string
+	switch {
+	case bat.IsEmpty(), bat.IsFull():
+		return "", nil
+	case bat.IsCharging():
+		if bat.ChargeRate == 0 {
+			return "discharging at zero rate", IsNotCharging
+		}
+		str = "until charged"
+	case bat.IsDischarging():
+		if bat.ChargeRate == 0 {
+			return "discharging at zero rate", IsNotDischarging
+		}
+		str = "remaining"
+	default:
+		return "unknown", IsUnknown
+	}
+	return str, nil
 }
 
 func (bat *Battery) Time() string {
