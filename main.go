@@ -24,6 +24,11 @@ func init() {
 	pflag.BoolVarP(&tmuxFlag, "tmux", "t", tmuxFlag, "Enable tmux status bar colors")
 	// pflag.StringVarP(&outputSep, "new-line", "n", outputSep, "Lines separator")
 	// pflag.IntVarP(&limit, "limit", "l", limit, "Limit lines")
+
+	pflag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "%s [flags] [format]\n", os.Args[0])
+		pflag.PrintDefaults()
+	}
 }
 
 func main() {
@@ -55,7 +60,6 @@ func main() {
 	var out []string
 	for i, bat := range batteries {
 		b := &Battery{i, bat, 0}
-		// str := b.String()
 		str := b.String()
 		if colorFlag {
 			str = ColorString(str, StateColorString(b))

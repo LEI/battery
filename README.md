@@ -9,8 +9,16 @@ Based on [distatus/battery](https://github.com/distatus/battery)
 
 ## Usage
 
-Default format: `{{.Id}}: {{.State}}, {{.Percent}}%{{if ne .Duration ""}}, {{end}}{{.Duration}}`
+    $ battery -h
+    battery [flags] [format]
+      -c, --color   Enable color output
+      -s, --spark   Enable sparkline bar
+      -t, --tmux    Enable tmux status bar colors
 
-    $ battery [flags] [format]
-    # -c, --color
-    # -t, --tmux
+Default format
+
+    $ battery '{{.Id}}: {{.State}}, {{.Percent}}%{{if ne .Duration ""}}, {{end}}{{.Duration}}'
+
+Example
+
+    $ battery --spark '{{.Bar}}'
