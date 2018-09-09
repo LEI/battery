@@ -68,6 +68,7 @@ func main() {
 	fmt.Printf(outputFormat, strings.Join(out, outputSep))
 }
 
+// ColorString according to format flags.
 func ColorString(str string, clr string) string {
 	var format = "%s%s%s"
 	if tmuxFlag {
@@ -76,6 +77,7 @@ func ColorString(str string, clr string) string {
 	return fmt.Sprintf(format, clr, str, colors.Get(DefaultColor))
 }
 
+// FormatDurationString in a human readable way.
 func FormatDurationString(hours, minutes, seconds int) string {
 	var str string // Pad int with zero: %02d, Truncate string: %.0s
 	switch 0 {
@@ -91,6 +93,7 @@ func FormatDurationString(hours, minutes, seconds int) string {
 	return str
 }
 
+// GetBar string in spark or ascii mode.
 func GetBar(val float64, max float64) string {
 	switch {
 	case sparkFlag:
@@ -100,6 +103,7 @@ func GetBar(val float64, max float64) string {
 	}
 }
 
+// StateColorString according to battery status.
 func StateColorString(bat *Battery) string {
 	var clr string
 	switch {
