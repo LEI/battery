@@ -1,0 +1,85 @@
+# https://goreleaser.com
+builds:
+  # Path to main.go file or main package (default: .)
+  - main: .
+    # binary: battery
+    # flags:
+    #   - -tags
+    #   - dev
+    # ldflags:
+    #  - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+    env:
+      - CGO_ENABLED=0
+    goos: # https://golang.org/doc/install/source#environment
+      - windows
+      - darwin
+      - linux
+      # - freebsd
+    goarch:
+      - 386
+      - amd64
+    #   - arm
+    #   - arm64
+    # goarm:
+    #   - 6
+    #   - 7
+    # hooks:
+    #   pre:
+    #   post:
+git:
+  short_hash: true
+snapshot:
+  # Default is "SNAPSHOT-{{.Commit}}"
+  name_template: "{{ .Tag }}-next"
+archive:
+  format: binary
+changelog:
+  # sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+# sign:
+#   signature: "${artifact}.sig"
+#   cmd: gpg
+#   args: ["-u", "<key id, fingerprint, email, ...>", "--output", "${signature}", "--detach-sign", "${artifact}"]
+#   args: ["--output", "${signature}", "--detach-sign", "${artifact}"]
+#   artifacts: checksum # checksum, all, none
+brew:
+  name: battery
+  github:
+    owner: LEI
+    name: homebrew-dot
+  # download_strategy:
+  # commit_author:
+  #   name:
+  #   email:
+  # folder: Formula
+  # caveats: ""
+  homepage: "https://github.com/LEI/battery"
+  # description: ""
+  # dependencies: []
+  # conflicts: []
+  # plist: |
+  # test: |
+  # install (default: bin.install "program"°
+nfpm:
+  name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+  # formats:
+  #   - deb
+  #   - rpm
+  # dependencies: []
+  # recommends/suggests/conflicts
+  # overrides:
+  #   rpm:
+  #     replacements:
+  #       amd64: x86_64
+  #     name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Arch }}"
+  #     files:
+  #       "tmp/man.gz": "/usr/share/man/man8/app.8.gz"
+  #     config_files:
+  #       "tmp/app_generated.conf": "/etc/app-rpm.conf"
+  #     scripts:
+  #       preinstall: "scripts/preinstall-rpm.sh"
+# snapcraft:
+#   name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
