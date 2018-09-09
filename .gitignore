@@ -1,2 +1,6 @@
-dist
-vendor
+/battery
+/battery.exe
+/dist
+/vendor
+/coverage.txt
+# release/
