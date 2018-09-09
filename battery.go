@@ -23,6 +23,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"text/template"
@@ -32,21 +33,29 @@ import (
 )
 
 var (
-	Empty            = fmt.Errorf("empty battery")
-	Full             = fmt.Errorf("full battery")
-	IsNotCharging    = fmt.Errorf("will never fully charge")
-	IsNotDischarging = fmt.Errorf("will never fully discharge")
-	IsUnknown        = fmt.Errorf("unkwnown state")
+	// ErrEmpty state
+	ErrEmpty = errors.New("empty battery")
+	// ErrFull state
+	ErrFull = errors.New("full battery")
+	// ErrIsNotCharging state
+	ErrIsNotCharging = errors.New("will never fully charge")
+	// ErrIsNotDischarging state
+	ErrIsNotDischarging = errors.New("will never fully discharge")
+	// ErrIsUnknown state
+	ErrIsUnknown = errors.New("unkwnown state")
+	// ErrNoBatteries detected
+	ErrNoBatteries = errors.New("no batteries")
 )
 
+// GetAll batteries
 func GetAll() ([]*battery.Battery, error) {
 	batteries, err := battery.GetAll()
 	return batteries, err
 }
 
-func NewBattery(idx int, bat *battery.Battery) *Battery {
-	return &Battery{idx, bat, time.Duration(0)}
-}
+// func NewBattery(idx int, bat *battery.Battery) *Battery {
+// 	return &Battery{idx, bat, time.Duration(0)}
+// }
 
 /* battery.Battery:
 // Current battery state.
@@ -61,6 +70,8 @@ Design float64
 // It is always non-negative, consult .State field to check
 // whether it means charging or discharging.
 ChargeRate float64*/
+
+// Battery type
 type Battery struct {
 	idx int
 	*battery.Battery
@@ -69,22 +80,24 @@ type Battery struct {
 }
 
 func (bat *Battery) String() string {
-	str, err := bat.Template(defaultFmt)
+	str, err := bat.Template(batteryTpl)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Invalid battery %s", err)
 		os.Exit(1)
 	}
-	return fmt.Sprintf("%s", str)
+	return str // fmt.Sprintf("%s", str)
 }
 
+// Template battery string
 func (bat *Battery) Template(tpl string) (string, error) {
 	str, err := bat.Parse(tpl)
 	if err != nil || str == "" {
 		return str, err
 	}
-	return fmt.Sprintf("%s", str), nil
+	return str, nil // fmt.Sprintf("%s", str), nil
 }
 
+// Parse battery template
 func (bat *Battery) Parse(tpl string) (string, error) {
 	tmpl, err := template.New("bat" + string(bat.idx)).Parse(tpl)
 	// tmpl = tmpl.Option("missingkey=zero")
@@ -100,38 +113,47 @@ func (bat *Battery) Parse(tpl string) (string, error) {
 	return str, nil
 }
 
-func (bat *Battery) Id() string {
+// ID battery
+func (bat *Battery) ID() string {
 	return bat.Fid("BAT%d")
 }
 
+// Idx index
 func (bat *Battery) Idx() int {
 	return bat.idx
 }
 
+// Fid formats the battery index
 func (bat *Battery) Fid(format string) string {
 	return fmt.Sprintf(format, bat.idx)
 }
 
+// State string
 func (bat *Battery) State() string {
 	return bat.Battery.State.String()
 }
 
+// StateColor string
 func (bat *Battery) StateColor() string {
 	return StateColorString(bat)
 }
 
+// IsEmpty battery
 func (bat *Battery) IsEmpty() bool {
 	return bat.Battery.State == battery.Empty
 }
 
+// IsFull battery
 func (bat *Battery) IsFull() bool {
 	return bat.Battery.State == battery.Full
 }
 
+// IsCharging battery
 func (bat *Battery) IsCharging() bool {
 	return bat.Battery.State == battery.Charging
 }
 
+// IsDischarging battery
 func (bat *Battery) IsDischarging() bool {
 	return bat.Battery.State == battery.Discharging
 }
@@ -140,6 +162,7 @@ func (bat *Battery) IsDischarging() bool {
 // 	return colors.Get(DefaultColor)
 // }
 
+// Percent remaining battery percent string
 func (bat *Battery) Percent() string {
 	return fmt.Sprintf("%.0f", bat.PercentFloat())
 }
@@ -148,23 +171,27 @@ func (bat *Battery) Percent() string {
 // 	return int(fmt.PercentFloat())
 // }
 
+// PercentFloat remaining battery
 func (bat *Battery) PercentFloat() float64 {
 	return bat.Current / bat.Full * 100
 }
 
+// Fpercent formats remaining battery percent string
 func (bat *Battery) Fpercent(format string) string {
 	return fmt.Sprintf(format, bat.Percent())
 }
 
+// Bar string
 func (bat *Battery) Bar() string {
 	return GetBar(bat.Current, bat.Full)
 }
 
+// Duration string formatted or empty
 func (bat *Battery) Duration() string {
 	str, err := bat.Remaining()
 	switch err {
 	case nil: // continue
-	case Empty, Full, IsNotCharging, IsNotDischarging, IsUnknown:
+	case ErrEmpty, ErrFull, ErrIsNotCharging, ErrIsNotDischarging, ErrIsUnknown:
 		return str
 	}
 	dur := FormatDurationString(bat.Hours(), bat.Minutes(), bat.Seconds())
@@ -174,37 +201,41 @@ func (bat *Battery) Duration() string {
 	return str
 }
 
+// Remaining state string
 func (bat *Battery) Remaining() (string, error) {
 	var str string
 	switch {
 	case bat.IsEmpty():
-		return "", Empty
+		return "", ErrEmpty
 	case bat.IsFull():
-		return "", Full
+		return "", ErrFull
 	case bat.IsCharging():
 		if bat.ChargeRate == 0 {
-			return "discharging at zero rate", IsNotCharging
+			return "discharging at zero rate", ErrIsNotCharging
 		}
 		str = "until charged"
 	case bat.IsDischarging():
 		if bat.ChargeRate == 0 {
-			return "discharging at zero rate", IsNotDischarging
+			return "discharging at zero rate", ErrIsNotDischarging
 		}
 		str = "remaining"
 	default:
-		return "unknown", IsUnknown
+		return "unknown", ErrIsUnknown
 	}
 	return str, nil
 }
 
+// Time duration string
 func (bat *Battery) Time() string {
 	return bat.Ftime("%02d:%02d:%02d")
 }
 
+// Ftime formats duration string
 func (bat *Battery) Ftime(format string) string {
 	return fmt.Sprintf(format, bat.Hours(), bat.Minutes(), bat.Seconds())
 }
 
+// Charge rate
 func (bat *Battery) Charge() float64 {
 	var timeNum float64
 	switch {
@@ -224,6 +255,7 @@ func (bat *Battery) Charge() float64 {
 	return timeNum
 }
 
+// ParseDuration battery
 func (bat *Battery) ParseDuration() (time.Duration, error) {
 	if bat.dur != time.Duration(0) {
 		return bat.dur, nil
@@ -238,6 +270,7 @@ func (bat *Battery) ParseDuration() (time.Duration, error) {
 	return duration, nil
 }
 
+// Hours duration
 func (bat *Battery) Hours() int {
 	duration, err := bat.ParseDuration()
 	if err != nil {
@@ -248,10 +281,12 @@ func (bat *Battery) Hours() int {
 	return int(h) % 60
 }
 
+// Fhours formats hours duration
 func (bat *Battery) Fhours(format string) string {
 	return fmt.Sprintf(format, bat.Hours())
 }
 
+// Minutes duration
 func (bat *Battery) Minutes() int {
 	duration, err := bat.ParseDuration()
 	if err != nil {
@@ -262,10 +297,12 @@ func (bat *Battery) Minutes() int {
 	return int(m) % 60
 }
 
+// Fminutes formats minutes duration
 func (bat *Battery) Fminutes(format string) string {
 	return fmt.Sprintf(format, bat.Minutes())
 }
 
+// Seconds duration
 func (bat *Battery) Seconds() int {
 	duration, err := bat.ParseDuration()
 	if err != nil {
@@ -276,6 +313,7 @@ func (bat *Battery) Seconds() int {
 	return int(s) % 60
 }
 
+// Fseconds formats seconds duration
 func (bat *Battery) Fseconds(format string) string {
 	return fmt.Sprintf(format, bat.Seconds())
 }

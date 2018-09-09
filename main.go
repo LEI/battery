@@ -1,15 +1,18 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/distatus/battery"
 	"github.com/spf13/pflag"
 )
 
 var (
-	defaultFmt   = "{{.Id}}: {{.State}}, {{.Percent}}%{{if ne .Duration \"\"}}, {{end}}{{.Duration}}"
+	// Default battery template
+	batteryTpl   = "{{.ID}}: {{.State}}, {{.Percent}}%{{if ne .Duration \"\"}}, {{end}}{{.Duration}}"
 	outputSep    = "\n"
 	outputFormat = "%s\n"
 	colorFlag    bool
@@ -17,6 +20,8 @@ var (
 	tmuxFlag     bool
 	colors       Colors
 )
+
+var usageStr = `RTFM`
 
 func init() {
 	pflag.BoolVarP(&colorFlag, "color", "c", colorFlag, "Enable color output")
@@ -28,44 +33,7 @@ func init() {
 		fmt.Fprintf(os.Stderr, "%s [flags] [format]\n", os.Args[0])
 		pflag.PrintDefaults()
 	}
-}
-
-func main() {
-	pflag.Parse()
-	switch pflag.NArg() {
-	case 0, 1:
-		if pflag.Arg(0) != "" {
-			defaultFmt = pflag.Arg(0)
-		}
-	default:
-		fmt.Fprintf(os.Stderr, "Invalid number of args: %d\n", pflag.NArg())
-		os.Exit(1)
-	}
-	batteries, err := GetAll()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s", err)
-		os.Exit(1)
-	}
-	if len(batteries) == 0 {
-		fmt.Fprintf(os.Stderr, "%s\n", "No batteries")
-		os.Exit(1)
-	}
-	switch {
-	case tmuxFlag:
-		colors = &tmuxColors{}
-	default: // case colorFlag:
-		colors = &asciiColors{}
-	}
-	var out []string
-	for i, bat := range batteries {
-		b := &Battery{i, bat, 0}
-		str := b.String()
-		if colorFlag || tmuxFlag {
-			str = ColorString(str, StateColorString(b))
-		}
-		out = append(out, str)
-	}
-	fmt.Printf(outputFormat, strings.Join(out, outputSep))
+	pflag.ErrHelp = errors.New(usageStr)
 }
 
 // ColorString according to format flags.
@@ -127,4 +95,49 @@ func StateColorString(bat *Battery) string {
 		clr = colors.Get(DefaultColor)
 	}
 	return clr
+}
+
+func findBatteries() ([]*battery.Battery, error) {
+	batteries, err := GetAll()
+	if err != nil {
+		return batteries, err
+	}
+	if len(batteries) == 0 {
+		return batteries, ErrNoBatteries
+	}
+	return batteries, nil
+}
+
+func main() {
+	pflag.Parse()
+	switch pflag.NArg() {
+	case 0, 1:
+		if pflag.Arg(0) != "" {
+			batteryTpl = pflag.Arg(0)
+		}
+	default:
+		fmt.Fprintf(os.Stderr, "invalid number of args: %d\n", pflag.NArg())
+		os.Exit(1)
+	}
+	batteries, err := findBatteries()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	switch {
+	case tmuxFlag:
+		colors = &tmuxColors{}
+	default: // case colorFlag:
+		colors = &asciiColors{}
+	}
+	var out []string
+	for i, bat := range batteries {
+		b := &Battery{i, bat, 0}
+		str := b.String()
+		if colorFlag || tmuxFlag {
+			str = ColorString(str, StateColorString(b))
+		}
+		out = append(out, str)
+	}
+	fmt.Printf(outputFormat, strings.Join(out, outputSep))
 }

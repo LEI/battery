@@ -2,13 +2,71 @@
 
 language: go
 
+sudo: false
+
+notifications:
+  email: false
+
 go:
-  - 1.3
-  - 1.4
-  - 1.5
-  - 1.6
+  # # cannot find package "github.com/distatus/battery"
+  # - 1.3.x
+  # - 1.4.x
+  # - 1.5.x
+
+  # # vendor/golang.org/x/sys/unix/ioctl.go:18: undefined: runtime.KeepAlive
+  # - 1.6.x
+
+  - 1.7.x
+  - 1.8.x
+  - 1.9.x
+  # - 1.10.x
+  - 1.11.x
+  - master
   - tip
 
 matrix:
   allow_failures:
     - go: tip
+
+install: make vendor
+
+script: go test -v ./... # make test
+
+stages:
+  - test
+  - latest
+
+# https://github.com/golang/dep/blob/master/.travis.yml
+jobs:
+  include:
+    - stage: latest
+      go_import_path: github.com/LEI/battery
+      install: skip
+      os: linux
+      go: 1.10.x
+      script: make test
+      env:
+        - CGO_ENABLED=1
+    # - stage: test
+    #   go_import_path: github.com/LEI/battery
+    #   install:
+    #     - make vendor
+    #   os: linux
+    #   go: 1.10.x
+    #   script:
+    #     - make test
+    #   # after_success:
+    #   #   - TODO: coverage.txt
+    # # YAML alias, for settings shared across the simpler builds
+    # - &simple-test
+    #   go: 1.9.x
+    #   stage: test
+    #   go_import_path: github.com/LEI/battery
+    #   install: skip
+    #   script: go test -v ./...
+    # - <<: *simple-test
+    #   go: tip
+    # - stage: deploy
+
+addons:
+  ssh_known_hosts: github.com

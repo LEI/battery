@@ -6,6 +6,7 @@ import (
 	"github.com/joliv/spark"
 )
 
+// BarLength default length for ascii bar
 var BarLength = 8
 
 // type Bar func(val float64, max float64) string
@@ -34,9 +35,8 @@ func printN(char string, times int) string {
 	if times == 0 {
 		return ""
 	}
-	str := fmt.Sprintf("%s", char)
-	str += printN(char, times-1)
-	return str
+	char += printN(char, times-1)
+	return char
 }
 
 func sparkBar(val float64, max float64) string {
@@ -45,5 +45,5 @@ func sparkBar(val float64, max float64) string {
 	if len(runes) != 3 {
 		panic(fmt.Errorf("invalid sparkline length (%d != 3): %s", len(runes), string(runes)))
 	}
-	return fmt.Sprintf("%s", string(runes[1]))
+	return string(runes[1])
 }
